@@ -1,122 +1,55 @@
-# Unofficial OxCaml containers
+# docker-oxcaml
 
-This repo is an external proof of concept for fast OxCaml onboarding with
-standard container tooling.
+Fast, unofficial OxCaml containers.
 
-The official [`oxcaml/playground`](https://github.com/oxcaml/playground)
-appears stale from the outside: it has old open PRs, the prebuilt-image PR has
-no public comments or reviews, and the public docs still warn that Codespaces
-startup currently takes 30+ minutes. This repo accomplishes the same playground
-task with prebuilt images, reproducible tags, smoke tests, and a Codespaces
-configuration that starts from an already-built OxCaml toolchain.
+OxCaml's public playground still asks new users to wait 20-30+ minutes while a
+Codespace builds the toolchain. This repo moves that wait into CI: pull a
+prebuilt image, open a devcontainer, start hacking.
 
 This is not an official Jane Street or OxCaml project.
 
-## Images
+## Try It
 
-The workflow publishes two images:
+Open a Codespace. The default devcontainer is the fast path.
 
-| Image | Purpose |
-| --- | --- |
-| `ghcr.io/cezarc1/oxcaml-toolchain` | OxCaml switch plus editor/build tooling. |
-| `ghcr.io/cezarc1/oxcaml-playground` | Toolchain image plus runnable playground examples. |
+To compare with today's slow path, choose `OxCaml Baseline (source-build)`
+from the devcontainer configuration dropdown.
 
-The same images are also pushed to Docker Hub when the repository has
-`DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` secrets:
-
-| Image | Purpose |
-| --- | --- |
-| `docker.io/cezarc1/oxcaml-toolchain` | Docker Hub mirror of the toolchain image. |
-| `docker.io/cezarc1/oxcaml-playground` | Docker Hub mirror of the playground image. |
-
-Tags are based on the OxCaml opam repository snapshot:
-
-```text
-opam-<12-char-opam-repository-sha>-ubuntu-24.04
-5.2.0-ox-ubuntu-24.04
-latest
-```
-
-The immutable snapshot tag is the one to pin in downstream devcontainers. The
-moving tags exist for quick experiments.
-
-## Try It In Codespaces
-
-Use GitHub's Codespaces creation UI and choose one of the devcontainer
-configurations:
-
-| Configuration | What it shows |
-| --- | --- |
-| `OxCaml Fast Playground (prebuilt)` | Uses `ghcr.io/cezarc1/oxcaml-playground:latest`; no opam install during startup. |
-| `OxCaml Baseline (source-build)` | Builds the OxCaml switch during devcontainer creation, mirroring the slow path. |
-
-GitHub Codespaces supports multiple devcontainer configurations, so the choice
-appears at codespace creation time.
-
-## Local Smoke Test
-
-After an image exists:
+Or run the playground image directly:
 
 ```sh
-scripts/smoke-image.sh ghcr.io/cezarc1/oxcaml-toolchain:latest toolchain
-scripts/smoke-image.sh ghcr.io/cezarc1/oxcaml-playground:latest playground
+docker run --rm -it ghcr.io/cezarc1/oxcaml-playground:latest
 ```
 
-Inside either image, use `with-oxcaml` to run commands in the OxCaml switch:
+## What Exists
 
-```sh
-docker run --rm -it ghcr.io/cezarc1/oxcaml-toolchain:latest \
-  with-oxcaml ocamlopt -version
-```
+- `ghcr.io/cezarc1/oxcaml-toolchain:latest`
+- `ghcr.io/cezarc1/oxcaml-playground:latest`
+- Immutable snapshot tag: `opam-d57b5d40e633-ubuntu-24.04`
+- Docker Hub mirroring is wired, but waits on Docker Hub credentials.
 
-## Measuring Startup
+The toolchain image includes OxCaml `5.2.0+ox`, `dune`, `ocamlformat`,
+`merlin`, `ocaml-lsp-server`, `utop`, `parallel`, and `core_unix`.
 
-The script below uses the Dev Container CLI and writes logs under
-`.measurements/`:
+## Proof
 
-```sh
-scripts/measure-devcontainer.sh fast-oxcaml
-scripts/measure-devcontainer.sh baseline-source-build
-```
+- First uncached toolchain image build: 60m 33s.
+- Reusing the published toolchain, playground build plus smoke test: 4m 36s.
+- CI smoke-tests `ocamlopt`, `opam`, `dune`, `ocamllsp`, and the example
+  project.
+- For the fastest Codespaces demo, enable a prebuild for `main` plus
+  `.devcontainer/devcontainer.json` in repository Settings -> Codespaces. The
+  example build runs in `updateContentCommand`, so GitHub can include it in the
+  prebuild.
+- Successful run:
+  [`28720270392`](https://github.com/cezarc1/docker-oxcaml/actions/runs/28720270392).
 
-Record the resulting timings here after the first published run:
+## Why This Exists
 
-| Path | Startup/build time | Notes |
-| --- | ---: | --- |
-| Official public docs | 20-30+ min | As documented by OxCaml's Get OxCaml page and playground README. |
-| Baseline source-build config | Pending measurement | Builds the switch during container creation. |
-| Fast prebuilt config | Pending measurement | Pulls a prebuilt image and builds only the tiny sample. |
+The official [`oxcaml/playground`](https://github.com/oxcaml/playground)
+appears stale from the outside: old open PRs, no public review on the
+prebuilt-image PR, and public docs that still warn about long Codespaces
+startup.
 
-Current image-build evidence:
-
-| Path | Time | Evidence |
-| --- | ---: | --- |
-| First uncached toolchain image build | 60m 33s | [`28718382229`](https://github.com/cezarc1/docker-oxcaml/actions/runs/28718382229), toolchain build step. |
-| Toolchain already published; build missing playground image | 4m 36s | [`28720270392`](https://github.com/cezarc1/docker-oxcaml/actions/runs/28720270392), full workflow. |
-
-## How Builds Track OxCaml
-
-OxCaml does not currently publish clean GitHub releases, and the `oxcaml/oxcaml`
-tags are not a stable image-versioning surface. The public installation path is
-the OxCaml opam repository, so this repo keys image identity to
-[`oxcaml/opam-repository`](https://github.com/oxcaml/opam-repository).
-
-The build workflow:
-
-1. Resolves the current `oxcaml/opam-repository` commit.
-2. Checks whether `opam-<sha>-ubuntu-24.04` already exists.
-3. Builds only when the snapshot tag is missing, or when manually forced.
-4. Smoke-tests `ocamlopt`, `opam`, `dune`, `ocamllsp`, and the playground sample.
-5. Pushes GHCR images and optionally Docker Hub mirrors.
-
-## Upstream Adoption Path
-
-The smallest upstream adoption path would be:
-
-1. Publish an org-owned image such as `ghcr.io/oxcaml/playground:<snapshot>`.
-2. Pin the digest in `oxcaml/playground/.devcontainer/devcontainer.json`.
-3. Keep the Dockerfile and CI smoke test as the source of truth.
-4. Update `oxcaml.org/get-oxcaml/` once the fast path is repeatably measured.
-
-That would preserve the existing playground UX while removing the public
-30-minute first-run tax.
+This repo is the smallest reproducible demonstration that prebuilt images solve
+that onboarding problem with standard devcontainer tooling.

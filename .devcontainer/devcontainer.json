@@ -12,6 +12,5 @@
       ]
     }
   },
-  "postCreateCommand": "with-oxcaml dune build ./examples/hello"
+  "updateContentCommand": "with-oxcaml dune build ./examples/hello"
 }
-

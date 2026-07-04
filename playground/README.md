@@ -1,10 +1,6 @@
-# OxCaml Playground Contents
+# Playground
 
-This directory is intentionally small. The goal of this repo is to demonstrate
-fast startup from a prebuilt OxCaml toolchain image; the runnable sample lives in
-`examples/hello`.
+Tiny sample used to prove the prebuilt OxCaml image works.
 
-An upstream adoption path could replace this directory with the contents of the
-official `oxcaml/playground` repository while keeping the same image and
-devcontainer structure.
-
+The point is not the example. The point is that a Codespace can start from an
+already-built OxCaml toolchain instead of building one for every new user.

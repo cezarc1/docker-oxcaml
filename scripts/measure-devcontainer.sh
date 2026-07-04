@@ -7,7 +7,12 @@ out_dir="$root/.measurements"
 mkdir -p "$out_dir"
 
 case "$config" in
-  fast-oxcaml|baseline-source-build) ;;
+  fast-oxcaml)
+    config_path="$root/.devcontainer/devcontainer.json"
+    ;;
+  baseline-source-build)
+    config_path="$root/.devcontainer/baseline-source-build/devcontainer.json"
+    ;;
   *)
     echo "unknown devcontainer config: $config" >&2
     exit 2
@@ -19,11 +24,10 @@ start="$(date +%s)"
 
 npx --yes @devcontainers/cli up \
   --workspace-folder "$root" \
-  --config "$root/.devcontainer/$config/devcontainer.json" \
+  --config "$config_path" \
   2>&1 | tee "$log"
 
 end="$(date +%s)"
 elapsed="$((end - start))"
 
 printf 'config=%s elapsed_seconds=%s log=%s\n' "$config" "$elapsed" "$log"
-
