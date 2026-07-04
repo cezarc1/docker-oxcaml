@@ -20,10 +20,10 @@ RUN mkdir -p /opt/oxcaml-playground && chown -R vscode:vscode /opt/oxcaml-playgr
 
 USER vscode
 WORKDIR /opt/oxcaml-playground
+COPY --chown=vscode:vscode dune-project ./dune-project
 COPY --chown=vscode:vscode examples ./examples
 COPY --chown=vscode:vscode playground ./playground
 
 RUN with-oxcaml dune build ./examples/hello
 
 CMD ["bash", "-l"]
-
