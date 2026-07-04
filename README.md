@@ -87,6 +87,13 @@ Record the resulting timings here after the first published run:
 | Baseline source-build config | Pending measurement | Builds the switch during container creation. |
 | Fast prebuilt config | Pending measurement | Pulls a prebuilt image and builds only the tiny sample. |
 
+Current image-build evidence:
+
+| Path | Time | Evidence |
+| --- | ---: | --- |
+| First uncached toolchain image build | 60m 33s | [`28718382229`](https://github.com/cezarc1/docker-oxcaml/actions/runs/28718382229), toolchain build step. |
+| Toolchain already published; build missing playground image | 4m 36s | [`28720270392`](https://github.com/cezarc1/docker-oxcaml/actions/runs/28720270392), full workflow. |
+
 ## How Builds Track OxCaml
 
 OxCaml does not currently publish clean GitHub releases, and the `oxcaml/oxcaml`
