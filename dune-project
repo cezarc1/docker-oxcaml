@@ -1,6 +1,6 @@
 (lang dune 3.17)
 
 (package
- (name oxcaml_hello)
+ (name docker_oxcaml_playground)
  (depends ocaml dune core_unix))
 
