@@ -1,0 +1,6 @@
+(lang dune 3.17)
+
+(package
+ (name oxcaml_hello)
+ (depends ocaml dune core_unix))
+

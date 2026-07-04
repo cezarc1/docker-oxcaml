@@ -1,0 +1,17 @@
+{
+  "name": "OxCaml Fast Playground (prebuilt)",
+  "image": "ghcr.io/cezarc1/oxcaml-playground:latest",
+  "remoteUser": "vscode",
+  "userEnvProbe": "loginInteractiveShell",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ocamllabs.ocaml-platform",
+        "ms-vscode.cpptools",
+        "eamodio.gitlens"
+      ]
+    }
+  },
+  "postCreateCommand": "with-oxcaml dune build ./examples/hello"
+}
+

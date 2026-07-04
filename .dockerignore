@@ -1,0 +1,7 @@
+.git
+.github
+.measurements
+.devcontainer-cache
+*.log
+.DS_Store
+
