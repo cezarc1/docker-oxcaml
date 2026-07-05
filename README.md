@@ -57,16 +57,3 @@ Release aliases are mutable. Provenance tags carry the opam repository SHA.
   [run 28720270392](https://github.com/cezarc1/docker-oxcaml/actions/runs/28720270392).
 - Codespaces startup time is not claimed yet; it should be measured after a
   repository prebuild is enabled.
-
-## Context
-
-The official [oxcaml/playground](https://github.com/oxcaml/playground) has a
-[commented-out digest-pinned prebuilt image](https://github.com/oxcaml/playground/blob/main/.devcontainer/devcontainer.json),
-and its public history shows a
-[prebuilt-image switch reverted in June 2025](https://github.com/oxcaml/playground/commit/3b20c8ddd9251d32d9463f92574adcd80f6b301e).
-A later [prebuilt-image PR](https://github.com/oxcaml/playground/pull/4)
-remains open without public review.
-
-This repo is a standalone demonstration of the release-image maintenance loop
-around that idea: compiler-version tags, opam provenance tags, smoke tests
-before alias promotion, and a pinned Codespaces devcontainer.
