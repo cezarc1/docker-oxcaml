@@ -24,7 +24,7 @@ permissions:
   packages: write
 
 env:
-  DOCKERHUB_NAMESPACE: cezarc1
+  DOCKERHUB_NAMESPACE: therealcezar
   OXCAML_OPAM_REPOSITORY_URL: https://github.com/oxcaml/opam-repository.git
 
 jobs:
