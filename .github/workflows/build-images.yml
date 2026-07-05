@@ -7,6 +7,15 @@ on:
         description: "OxCaml opam-repository ref, branch, tag, or SHA"
         required: false
         default: "main"
+      oxcaml_switch:
+        description: "Optional OxCaml switch override, such as 5.2.0+ox"
+        required: false
+        default: ""
+      force:
+        description: "Rebuild even if the provenance tag already exists"
+        required: false
+        type: boolean
+        default: false
   schedule:
     - cron: "17 5 * * *"
 
@@ -27,8 +36,10 @@ jobs:
       opam_short_sha: ${{ steps.snapshot.outputs.opam_short_sha }}
       snapshot_tag: ${{ steps.snapshot.outputs.snapshot_tag }}
       compiler_version: ${{ steps.snapshot.outputs.compiler_version }}
+      compiler_major_minor: ${{ steps.snapshot.outputs.compiler_major_minor }}
       compiler_package: ${{ steps.snapshot.outputs.compiler_package }}
       should_build: ${{ steps.existing.outputs.should_build }}
+      force_build: ${{ steps.existing.outputs.force_build }}
       toolchain_exists: ${{ steps.existing.outputs.toolchain_exists }}
       playground_exists: ${{ steps.existing.outputs.playground_exists }}
     steps:
@@ -39,7 +50,11 @@ jobs:
         id: snapshot
         env:
           INPUT_OPAM_REF: ${{ inputs.opam_ref || 'main' }}
+          INPUT_OXCAML_SWITCH: ${{ inputs.oxcaml_switch || '' }}
         run: |
+          if [ -n "$INPUT_OXCAML_SWITCH" ]; then
+            export OXCAML_SWITCH="$INPUT_OXCAML_SWITCH"
+          fi
           while IFS='=' read -r key value; do
             echo "$key=$value" >> "$GITHUB_OUTPUT"
           done < <(scripts/resolve-upstream.sh "$INPUT_OPAM_REF")
@@ -47,6 +62,7 @@ jobs:
       - name: Check whether snapshot images already exist
         id: existing
         env:
+          FORCE: ${{ inputs.force || false }}
           SNAPSHOT_TAG: ${{ steps.snapshot.outputs.snapshot_tag }}
         run: |
           toolchain="ghcr.io/${GITHUB_REPOSITORY_OWNER}/oxcaml-toolchain:${SNAPSHOT_TAG}"
@@ -64,13 +80,14 @@ jobs:
             playground_exists=false
           fi
 
-          if [ "$toolchain_exists" = "false" ] || [ "$playground_exists" = "false" ]; then
+          if [ "$FORCE" = "true" ] || [ "$toolchain_exists" = "false" ] || [ "$playground_exists" = "false" ]; then
             should_build=true
           else
             should_build=false
           fi
 
           echo "should_build=$should_build" >> "$GITHUB_OUTPUT"
+          echo "force_build=$FORCE" >> "$GITHUB_OUTPUT"
           echo "toolchain_exists=$toolchain_exists" >> "$GITHUB_OUTPUT"
           echo "playground_exists=$playground_exists" >> "$GITHUB_OUTPUT"
 
@@ -84,6 +101,7 @@ jobs:
       SNAPSHOT_TAG: ${{ needs.resolve.outputs.snapshot_tag }}
       OPAM_SHA: ${{ needs.resolve.outputs.opam_sha }}
       COMPILER_VERSION: ${{ needs.resolve.outputs.compiler_version }}
+      COMPILER_MAJOR_MINOR: ${{ needs.resolve.outputs.compiler_major_minor }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -100,9 +118,11 @@ jobs:
         run: |
           build_date="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           version_tag="${COMPILER_VERSION/+/-}-ubuntu-24.04"
+          minor_tag="${COMPILER_MAJOR_MINOR}-ox-ubuntu-24.04"
 
           echo "build_date=$build_date" >> "$GITHUB_OUTPUT"
           echo "version_tag=$version_tag" >> "$GITHUB_OUTPUT"
+          echo "minor_tag=$minor_tag" >> "$GITHUB_OUTPUT"
 
           {
             echo "toolchain_snapshot_tags<<EOF"
@@ -139,7 +159,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push toolchain snapshot
-        if: needs.resolve.outputs.toolchain_exists != 'true'
+        if: needs.resolve.outputs.force_build == 'true' || needs.resolve.outputs.toolchain_exists != 'true'
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -151,6 +171,7 @@ jobs:
           cache-to: type=gha,mode=max,scope=oxcaml-toolchain-linux-amd64
           build-args: |
             OXCAML_OPAM_REPOSITORY_REF=${{ env.OPAM_SHA }}
+            OXCAML_SWITCH=${{ env.COMPILER_VERSION }}
             BUILD_DATE=${{ steps.meta.outputs.build_date }}
             VCS_REF=${{ github.sha }}
           labels: |
@@ -165,10 +186,10 @@ jobs:
         run: |
           image="ghcr.io/${GITHUB_REPOSITORY_OWNER}/oxcaml-toolchain:${SNAPSHOT_TAG}"
           scripts/smoke-image.sh "$image" toolchain
-          scripts/check-image-labels.sh "$image" "$OPAM_SHA"
+          scripts/check-image-labels.sh "$image" "$OPAM_SHA" "$COMPILER_VERSION"
 
       - name: Build and push playground snapshot
-        if: needs.resolve.outputs.playground_exists != 'true'
+        if: needs.resolve.outputs.force_build == 'true' || needs.resolve.outputs.playground_exists != 'true'
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -195,19 +216,22 @@ jobs:
         run: |
           image="ghcr.io/${GITHUB_REPOSITORY_OWNER}/oxcaml-playground:${SNAPSHOT_TAG}"
           scripts/smoke-image.sh "$image" playground
-          scripts/check-image-labels.sh "$image" "$OPAM_SHA"
+          scripts/check-image-labels.sh "$image" "$OPAM_SHA" "$COMPILER_VERSION"
 
       - name: Promote GHCR aliases
         env:
           VERSION_TAG: ${{ steps.meta.outputs.version_tag }}
+          MINOR_TAG: ${{ steps.meta.outputs.minor_tag }}
         run: |
           docker buildx imagetools create \
             -t "ghcr.io/${GITHUB_REPOSITORY_OWNER}/oxcaml-toolchain:${VERSION_TAG}" \
+            -t "ghcr.io/${GITHUB_REPOSITORY_OWNER}/oxcaml-toolchain:${MINOR_TAG}" \
             -t "ghcr.io/${GITHUB_REPOSITORY_OWNER}/oxcaml-toolchain:latest" \
             "ghcr.io/${GITHUB_REPOSITORY_OWNER}/oxcaml-toolchain:${SNAPSHOT_TAG}"
 
           docker buildx imagetools create \
             -t "ghcr.io/${GITHUB_REPOSITORY_OWNER}/oxcaml-playground:${VERSION_TAG}" \
+            -t "ghcr.io/${GITHUB_REPOSITORY_OWNER}/oxcaml-playground:${MINOR_TAG}" \
             -t "ghcr.io/${GITHUB_REPOSITORY_OWNER}/oxcaml-playground:latest" \
             "ghcr.io/${GITHUB_REPOSITORY_OWNER}/oxcaml-playground:${SNAPSHOT_TAG}"
 
@@ -215,13 +239,16 @@ jobs:
         if: env.HAS_DOCKERHUB == 'true'
         env:
           VERSION_TAG: ${{ steps.meta.outputs.version_tag }}
+          MINOR_TAG: ${{ steps.meta.outputs.minor_tag }}
         run: |
           docker buildx imagetools create \
             -t "docker.io/${DOCKERHUB_NAMESPACE}/oxcaml-toolchain:${VERSION_TAG}" \
+            -t "docker.io/${DOCKERHUB_NAMESPACE}/oxcaml-toolchain:${MINOR_TAG}" \
             -t "docker.io/${DOCKERHUB_NAMESPACE}/oxcaml-toolchain:latest" \
             "docker.io/${DOCKERHUB_NAMESPACE}/oxcaml-toolchain:${SNAPSHOT_TAG}"
 
           docker buildx imagetools create \
             -t "docker.io/${DOCKERHUB_NAMESPACE}/oxcaml-playground:${VERSION_TAG}" \
+            -t "docker.io/${DOCKERHUB_NAMESPACE}/oxcaml-playground:${MINOR_TAG}" \
             -t "docker.io/${DOCKERHUB_NAMESPACE}/oxcaml-playground:latest" \
             "docker.io/${DOCKERHUB_NAMESPACE}/oxcaml-playground:${SNAPSHOT_TAG}"

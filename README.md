@@ -26,6 +26,20 @@ Or pull the image locally:
 docker run --rm -it ghcr.io/cezarc1/oxcaml-playground:latest
 ```
 
+## Tags
+
+Images are keyed to the latest public `ocaml-variants.*+ox` compiler in
+`oxcaml/opam-repository`.
+
+```text
+5.2.0-ox-ubuntu-24.04                 exact compiler alias
+5.2-ox-ubuntu-24.04                   latest smoke-tested 5.2.x build
+latest                                latest smoke-tested OxCaml compiler
+opam-d57b5d40e633-5.2.0-ox-ubuntu-24.04  exact opam snapshot provenance
+```
+
+Release aliases are mutable. Provenance tags carry the opam repository SHA.
+
 ## Evidence
 
 - Uncached OxCaml toolchain image build: 60m 33s in
@@ -45,6 +59,6 @@ and its public history shows a
 A later [prebuilt-image PR](https://github.com/oxcaml/playground/pull/4)
 remains open without public review.
 
-This repo is a standalone demonstration of the maintenance loop around that
-idea: snapshot-tagged images, smoke tests before alias promotion, and a pinned
-Codespaces devcontainer.
+This repo is a standalone demonstration of the release-image maintenance loop
+around that idea: compiler-version tags, opam provenance tags, smoke tests
+before alias promotion, and a pinned Codespaces devcontainer.
