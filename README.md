@@ -1,55 +1,50 @@
 # docker-oxcaml
 
-Fast, unofficial OxCaml containers.
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/cezarc1/docker-oxcaml?quickstart=1)
 
-OxCaml's public playground still asks new users to wait 20-30+ minutes while a
-Codespace builds the toolchain. This repo moves that wait into CI: pull a
-prebuilt image, open a devcontainer, start hacking.
+Unofficial prebuilt OxCaml containers.
+
+OxCaml's own [install page](https://oxcaml.org/get-oxcaml/) says that
+initializing the public playground Codespace currently takes "30+ minutes." This
+repo moves that toolchain build into CI so a devcontainer can start from an
+already-built OxCaml image.
 
 This is not an official Jane Street or OxCaml project.
 
 ## Try It
 
-Open a Codespace. The default devcontainer is the fast path.
+Click the badge, then run:
 
-To compare with today's slow path, choose `OxCaml Baseline (source-build)`
-from the devcontainer configuration dropdown.
+```sh
+with-oxcaml dune build ./examples/hello
+with-oxcaml dune exec ./examples/hello/bin/main.exe
+```
 
-Or run the playground image directly:
+Or pull the image locally:
 
 ```sh
 docker run --rm -it ghcr.io/cezarc1/oxcaml-playground:latest
 ```
 
-## What Exists
+## Evidence
 
-- `ghcr.io/cezarc1/oxcaml-toolchain:latest`
-- `ghcr.io/cezarc1/oxcaml-playground:latest`
-- Immutable snapshot tag: `opam-d57b5d40e633-ubuntu-24.04`
-- Docker Hub mirroring is wired, but waits on Docker Hub credentials.
+- Uncached OxCaml toolchain image build: 60m 33s in
+  [run 28718382229](https://github.com/cezarc1/docker-oxcaml/actions/runs/28718382229),
+  which failed later on a playground packaging bug.
+- Reusing the published toolchain, playground build plus smoke tests: 4m 36s in
+  [run 28720270392](https://github.com/cezarc1/docker-oxcaml/actions/runs/28720270392).
+- Codespaces startup time is not claimed yet; it should be measured after a
+  repository prebuild is enabled.
 
-The toolchain image includes OxCaml `5.2.0+ox`, `dune`, `ocamlformat`,
-`merlin`, `ocaml-lsp-server`, `utop`, `parallel`, and `core_unix`.
+## Context
 
-## Proof
+The official [oxcaml/playground](https://github.com/oxcaml/playground) has a
+[commented-out digest-pinned prebuilt image](https://github.com/oxcaml/playground/blob/main/.devcontainer/devcontainer.json),
+and its public history shows a
+[prebuilt-image switch reverted in June 2025](https://github.com/oxcaml/playground/commit/3b20c8ddd9251d32d9463f92574adcd80f6b301e).
+A later [prebuilt-image PR](https://github.com/oxcaml/playground/pull/4)
+remains open without public review.
 
-- First uncached toolchain image build: 60m 33s.
-- Reusing the published toolchain, playground build plus smoke test: 4m 36s.
-- CI smoke-tests `ocamlopt`, `opam`, `dune`, `ocamllsp`, and the example
-  project.
-- For the fastest Codespaces demo, enable a prebuild for `main` plus
-  `.devcontainer/devcontainer.json` in repository Settings -> Codespaces. The
-  example build runs in `updateContentCommand`, so GitHub can include it in the
-  prebuild.
-- Successful run:
-  [`28720270392`](https://github.com/cezarc1/docker-oxcaml/actions/runs/28720270392).
-
-## Why This Exists
-
-The official [`oxcaml/playground`](https://github.com/oxcaml/playground)
-appears stale from the outside: old open PRs, no public review on the
-prebuilt-image PR, and public docs that still warn about long Codespaces
-startup.
-
-This repo is the smallest reproducible demonstration that prebuilt images solve
-that onboarding problem with standard devcontainer tooling.
+This repo is a standalone demonstration of the maintenance loop around that
+idea: snapshot-tagged images, smoke tests before alias promotion, and a pinned
+Codespaces devcontainer.

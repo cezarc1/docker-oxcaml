@@ -1,6 +1,6 @@
 {
   "name": "OxCaml Fast Playground (prebuilt)",
-  "image": "ghcr.io/cezarc1/oxcaml-playground:latest",
+  "image": "ghcr.io/cezarc1/oxcaml-playground:opam-d57b5d40e633-ubuntu-24.04",
   "remoteUser": "vscode",
   "userEnvProbe": "loginInteractiveShell",
   "customizations": {
