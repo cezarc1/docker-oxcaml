@@ -20,7 +20,13 @@ with-oxcaml dune build ./examples/hello
 with-oxcaml dune exec ./examples/hello/bin/main.exe
 ```
 
-Or pull the image locally:
+For coding agents or a plain local shell, use the toolchain image:
+
+```sh
+docker run --rm -it therealcezar/oxcaml-toolchain:latest
+```
+
+Or pull the sample playground image:
 
 ```sh
 docker run --rm -it ghcr.io/cezarc1/oxcaml-playground:latest
@@ -28,7 +34,9 @@ docker run --rm -it ghcr.io/cezarc1/oxcaml-playground:latest
 
 ## Tags
 
-Images are keyed to the latest public `ocaml-variants.*+ox` compiler in
+Images are published to Docker Hub as `therealcezar/oxcaml-toolchain` and
+`therealcezar/oxcaml-playground`, with GHCR mirrors under this repo owner. Tags
+are keyed to the latest public `ocaml-variants.*+ox` compiler in
 `oxcaml/opam-repository`.
 
 ```text
